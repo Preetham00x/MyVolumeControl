@@ -76,11 +76,11 @@ class _HomePageState extends State<HomePage> {
     if (!_hasPermission) return;
     
     await FlutterOverlayWindow.showOverlay(
-      height: 70,
-      width: 70,
+      height: 200,
+      width: 200,
       alignment: OverlayAlignment.centerRight,
       enableDrag: true,
-      flag: OverlayFlag.clickThrough,
+      flag: OverlayFlag.focusPointer,
       positionGravity: PositionGravity.auto,
     );
     
@@ -322,37 +322,16 @@ class _OverlayBubbleState extends State<OverlayBubble> {
             onLongPress: () {
               setState(() => _showRemoveOption = true);
             },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 56,
-              height: 56,
+            child: Container(
+              width: 65,
+              height: 65,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xCC673AB7),
-                    Color(0x99512DA8),
-                  ],
-                ),
+                // 50% opacity purple
+                color: const Color(0x809C27B0),
                 border: Border.all(
-                  color: const Color(0x66FFFFFF),
+                  color: const Color(0x40FFFFFF),
                   width: 1.5,
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x40673AB7),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.volume_up_rounded,
-                  color: Colors.white,
-                  size: 28,
                 ),
               ),
             ),
