@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:system_alert_window/system_alert_window.dart';
+import 'package:volume_controller/volume_controller.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -82,7 +83,7 @@ class _HomePageState extends State<HomePage> {
     await SystemAlertWindow.showSystemWindow(
       height: 300,
       width: 80,
-      gravity: SystemWindowGravity.RIGHT,
+      gravity: SystemWindowGravity.TRAILING,
       prefMode: SystemWindowPrefMode.OVERLAY,
     );
     setState(() {
@@ -124,11 +125,11 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.05),
+                  color: const Color(0x0DFFFFFF), // white 5%
                   border: Border.all(
                     color: _hasPermission
-                        ? Colors.deepPurple.withOpacity(0.5)
-                        : Colors.grey.withOpacity(0.3),
+                        ? const Color(0x80673AB7) // deepPurple 50%
+                        : const Color(0x4D9E9E9E), // grey 30%
                     width: 2,
                   ),
                 ),
@@ -139,16 +140,16 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 32),
-              
+
               // Status text
               Text(
                 _hasPermission
                     ? 'Overlay Permission Granted'
                     : 'Overlay Permission Required',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white.withOpacity(0.9),
+                  color: Color(0xE6FFFFFF), // white 90%
                 ),
               ),
               const SizedBox(height: 8),
@@ -156,53 +157,52 @@ class _HomePageState extends State<HomePage> {
                 _hasPermission
                     ? 'You can now use the floating volume control'
                     : 'Tap below to enable "Display over other apps"',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.white.withOpacity(0.5),
+                  color: Color(0x80FFFFFF), // white 50%
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 48),
-              
+
               // Action buttons
-              if (!_hasPermission) ...[
+              if (!_hasPermission)
                 _buildGlassButton(
                   onPressed: _requestPermission,
                   icon: Icons.settings,
                   label: 'Grant Permission',
-                ),
-              ] else ...[
+                )
+              else
                 _buildGlassButton(
                   onPressed: _isOverlayVisible ? _closeOverlay : _showOverlay,
                   icon: _isOverlayVisible ? Icons.close : Icons.layers,
                   label: _isOverlayVisible ? 'Hide Bubble' : 'Show Bubble',
                   isPrimary: true,
                 ),
-              ],
-              
+
               const SizedBox(height: 48),
-              
+
               // Info text
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: Colors.white.withOpacity(0.03),
+                  color: const Color(0x08FFFFFF), // white 3%
                 ),
-                child: Row(
+                child: const Row(
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: Colors.white.withOpacity(0.4),
+                      color: Color(0x66FFFFFF), // white 40%
                       size: 20,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'The bubble will stay on top of other apps. Tap it to control volume.',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white.withOpacity(0.4),
+                          color: Color(0x66FFFFFF), // white 40%
                         ),
                       ),
                     ),
@@ -229,18 +229,18 @@ class _HomePageState extends State<HomePage> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: isPrimary
-              ? LinearGradient(
+              ? const LinearGradient(
                   colors: [
-                    Colors.deepPurple.withOpacity(0.6),
-                    Colors.deepPurple.withOpacity(0.3),
+                    Color(0x99673AB7), // deepPurple 60%
+                    Color(0x4D673AB7), // deepPurple 30%
                   ],
                 )
               : null,
-          color: isPrimary ? null : Colors.white.withOpacity(0.1),
+          color: isPrimary ? null : const Color(0x1AFFFFFF), // white 10%
           border: Border.all(
             color: isPrimary
-                ? Colors.deepPurple.withOpacity(0.5)
-                : Colors.white.withOpacity(0.1),
+                ? const Color(0x80673AB7) // deepPurple 50%
+                : const Color(0x1AFFFFFF), // white 10%
             width: 1,
           ),
         ),
@@ -283,11 +283,34 @@ class _VolumeOverlayWidgetState extends State<VolumeOverlayWidget> {
   }
 
   Future<void> _initVolume() async {
-    // Volume controller will be initialized in the overlay
-    // For now, we start with a default value
-    setState(() {
-      _currentVolume = 0.5;
+    try {
+      final volume = await VolumeController.instance.getVolume();
+      setState(() {
+        _currentVolume = volume;
+      });
+    } catch (e) {
+      log("Error getting volume: $e");
+    }
+
+    // Listen for volume changes
+    VolumeController.instance.addListener((volume) {
+      setState(() {
+        _currentVolume = volume;
+      });
     });
+  }
+
+  @override
+  void dispose() {
+    VolumeController.instance.removeListener();
+    super.dispose();
+  }
+
+  Future<void> _setVolume(double value) async {
+    setState(() {
+      _currentVolume = value;
+    });
+    await VolumeController.instance.setVolume(value);
   }
 
   @override
@@ -306,15 +329,15 @@ class _VolumeOverlayWidgetState extends State<VolumeOverlayWidget> {
           width: 60,
           height: _isExpanded ? 250 : 60,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(_isExpanded ? 30 : 30),
-            color: Colors.black.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(30),
+            color: const Color(0x4D000000), // black 30%
             border: Border.all(
-              color: Colors.deepPurple.withOpacity(0.4),
+              color: const Color(0x66673AB7), // deepPurple 40%
               width: 1.5,
             ),
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
-                color: Colors.deepPurple.withOpacity(0.2),
+                color: Color(0x33673AB7), // deepPurple 20%
                 blurRadius: 20,
                 spreadRadius: 2,
               ),
@@ -326,13 +349,13 @@ class _VolumeOverlayWidgetState extends State<VolumeOverlayWidget> {
               children: [
                 // Frosted glass effect background
                 Container(
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.white.withOpacity(0.15),
-                        Colors.white.withOpacity(0.05),
+                        Color(0x26FFFFFF), // white 15%
+                        Color(0x0DFFFFFF), // white 5%
                       ],
                     ),
                   ),
@@ -357,19 +380,15 @@ class _VolumeOverlayWidgetState extends State<VolumeOverlayWidget> {
                                 overlayRadius: 16,
                               ),
                               activeTrackColor: Colors.deepPurple,
-                              inactiveTrackColor: Colors.white.withOpacity(0.2),
+                              inactiveTrackColor:
+                                  const Color(0x33FFFFFF), // white 20%
                               thumbColor: Colors.white,
-                              overlayColor: Colors.deepPurple.withOpacity(0.2),
+                              overlayColor:
+                                  const Color(0x33673AB7), // deepPurple 20%
                             ),
                             child: Slider(
                               value: _currentVolume,
-                              onChanged: (value) {
-                                setState(() {
-                                  _currentVolume = value;
-                                });
-                                // Volume control would be applied here
-                                // VolumeController.instance.setVolume(value);
-                              },
+                              onChanged: _setVolume,
                             ),
                           ),
                         ),
@@ -380,12 +399,12 @@ class _VolumeOverlayWidgetState extends State<VolumeOverlayWidget> {
                     Container(
                       width: 40,
                       height: 40,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            Colors.deepPurple.withOpacity(0.6),
-                            Colors.deepPurple.withOpacity(0.2),
+                            Color(0x99673AB7), // deepPurple 60%
+                            Color(0x33673AB7), // deepPurple 20%
                           ],
                         ),
                       ),
