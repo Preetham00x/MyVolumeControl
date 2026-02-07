@@ -1,37 +1,23 @@
 package com.volumecontrol.volume_control_overlay
 
-import android.content.Context
-import android.media.AudioManager
+import android.content.Intent
+import android.os.Build
+import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
-import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.plugin.common.MethodChannel
 
 class MainActivity: FlutterActivity() {
-    private val CHANNEL = "com.volumecontrol/volume"
-
-    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-        super.configureFlutterEngine(flutterEngine)
-        
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            when (call.method) {
-                "showVolumeUI" -> {
-                    showSystemVolumeUI()
-                    result.success(null)
-                }
-                else -> {
-                    result.notImplemented()
-                }
-            }
-        }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Start the notification service
+        startVolumeNotificationService()
     }
 
-    private fun showSystemVolumeUI() {
-        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        // Adjust volume by 0 with FLAG_SHOW_UI to just show the volume panel
-        audioManager.adjustStreamVolume(
-            AudioManager.STREAM_MUSIC,
-            AudioManager.ADJUST_SAME,
-            AudioManager.FLAG_SHOW_UI
-        )
+    private fun startVolumeNotificationService() {
+        val serviceIntent = Intent(this, VolumeNotificationService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
     }
 }

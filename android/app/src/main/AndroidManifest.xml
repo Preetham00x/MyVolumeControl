@@ -1,9 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Overlay permissions -->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
     <application
@@ -31,14 +28,26 @@
             </intent-filter>
         </activity>
         
-        <!-- Custom Overlay Service with volume MethodChannel -->
+        <!-- Volume Notification Service -->
         <service
-            android:name=".OverlayService"
+            android:name=".VolumeNotificationService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="overlay" />
+                android:value="volume_control" />
+        </service>
+        
+        <!-- Quick Settings Tile for volume control -->
+        <service
+            android:name=".VolumeTileService"
+            android:label="Volume"
+            android:icon="@android:drawable/ic_lock_silent_mode_off"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
         </service>
         
         <meta-data
