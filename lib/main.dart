@@ -1,21 +1,21 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:system_alert_window/system_alert_window.dart';
-import 'package:volume_controller/volume_controller.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const VolumeControlApp());
 }
 
-/// Overlay entry point - this is called when the overlay window is shown
+/// Overlay entry point - called when the overlay window is shown
 @pragma("vm:entry-point")
 void overlayMain() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: VolumeOverlayWidget(),
+    home: OverlayBubble(),
   ));
 }
 
@@ -53,46 +53,44 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _checkPermission();
-    _setupOverlayListener();
+    _checkPermissionAndStatus();
   }
 
-  Future<void> _checkPermission() async {
-    final bool? status = await SystemAlertWindow.checkPermissions(
-      prefMode: SystemWindowPrefMode.OVERLAY,
-    );
+  Future<void> _checkPermissionAndStatus() async {
+    final hasPermission = await FlutterOverlayWindow.isPermissionGranted();
+    final isActive = await FlutterOverlayWindow.isActive();
     setState(() {
-      _hasPermission = status ?? false;
-    });
-  }
-
-  void _setupOverlayListener() {
-    SystemAlertWindow.overlayListener.listen((event) {
-      log("Overlay Event: $event");
+      _hasPermission = hasPermission;
+      _isOverlayVisible = isActive;
     });
   }
 
   Future<void> _requestPermission() async {
-    await SystemAlertWindow.requestPermissions(
-      prefMode: SystemWindowPrefMode.OVERLAY,
-    );
-    await _checkPermission();
+    final granted = await FlutterOverlayWindow.requestPermission();
+    setState(() {
+      _hasPermission = granted ?? false;
+    });
   }
 
   Future<void> _showOverlay() async {
-    await SystemAlertWindow.showSystemWindow(
-      height: 300,
-      width: 80,
-      gravity: SystemWindowGravity.TRAILING,
-      prefMode: SystemWindowPrefMode.OVERLAY,
+    if (!_hasPermission) return;
+    
+    await FlutterOverlayWindow.showOverlay(
+      height: 70,
+      width: 70,
+      alignment: OverlayAlignment.centerRight,
+      enableDrag: true,
+      flag: OverlayFlag.clickThrough,
+      positionGravity: PositionGravity.auto,
     );
+    
     setState(() {
       _isOverlayVisible = true;
     });
   }
 
   Future<void> _closeOverlay() async {
-    await SystemAlertWindow.closeSystemWindow();
+    await FlutterOverlayWindow.closeOverlay();
     setState(() {
       _isOverlayVisible = false;
     });
@@ -125,11 +123,11 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0x0DFFFFFF), // white 5%
+                  color: const Color(0x0DFFFFFF),
                   border: Border.all(
                     color: _hasPermission
-                        ? const Color(0x80673AB7) // deepPurple 50%
-                        : const Color(0x4D9E9E9E), // grey 30%
+                        ? const Color(0x80673AB7)
+                        : const Color(0x4D9E9E9E),
                     width: 2,
                   ),
                 ),
@@ -149,17 +147,17 @@ class _HomePageState extends State<HomePage> {
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xE6FFFFFF), // white 90%
+                  color: Color(0xE6FFFFFF),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 _hasPermission
-                    ? 'You can now use the floating volume control'
+                    ? 'Tap to show the floating volume bubble'
                     : 'Tap below to enable "Display over other apps"',
                 style: const TextStyle(
                   fontSize: 14,
-                  color: Color(0x80FFFFFF), // white 50%
+                  color: Color(0x80FFFFFF),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -187,24 +185,47 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: const Color(0x08FFFFFF), // white 3%
+                  color: const Color(0x08FFFFFF),
                 ),
-                child: const Row(
+                child: const Column(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: Color(0x66FFFFFF), // white 40%
-                      size: 20,
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'The bubble will stay on top of other apps. Tap it to control volume.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0x66FFFFFF), // white 40%
+                    Row(
+                      children: [
+                        Icon(Icons.touch_app, color: Color(0x66FFFFFF), size: 20),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Tap bubble → Show volume control',
+                            style: TextStyle(fontSize: 12, color: Color(0x66FFFFFF)),
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.pan_tool, color: Color(0x66FFFFFF), size: 20),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Drag bubble → Move anywhere',
+                            style: TextStyle(fontSize: 12, color: Color(0x66FFFFFF)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.touch_app_outlined, color: Color(0x66FFFFFF), size: 20),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Long press → Remove bubble',
+                            style: TextStyle(fontSize: 12, color: Color(0x66FFFFFF)),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -230,17 +251,12 @@ class _HomePageState extends State<HomePage> {
           borderRadius: BorderRadius.circular(16),
           gradient: isPrimary
               ? const LinearGradient(
-                  colors: [
-                    Color(0x99673AB7), // deepPurple 60%
-                    Color(0x4D673AB7), // deepPurple 30%
-                  ],
+                  colors: [Color(0x99673AB7), Color(0x4D673AB7)],
                 )
               : null,
-          color: isPrimary ? null : const Color(0x1AFFFFFF), // white 10%
+          color: isPrimary ? null : const Color(0x1AFFFFFF),
           border: Border.all(
-            color: isPrimary
-                ? const Color(0x80673AB7) // deepPurple 50%
-                : const Color(0x1AFFFFFF), // white 10%
+            color: isPrimary ? const Color(0x80673AB7) : const Color(0x1AFFFFFF),
             width: 1,
           ),
         ),
@@ -264,158 +280,123 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-/// The overlay widget that appears on top of other apps
-class VolumeOverlayWidget extends StatefulWidget {
-  const VolumeOverlayWidget({super.key});
+/// The floating bubble overlay widget
+class OverlayBubble extends StatefulWidget {
+  const OverlayBubble({super.key});
 
   @override
-  State<VolumeOverlayWidget> createState() => _VolumeOverlayWidgetState();
+  State<OverlayBubble> createState() => _OverlayBubbleState();
 }
 
-class _VolumeOverlayWidgetState extends State<VolumeOverlayWidget> {
-  bool _isExpanded = false;
-  double _currentVolume = 0.5;
+class _OverlayBubbleState extends State<OverlayBubble> {
+  static const platform = MethodChannel('com.volumecontrol/volume');
+  bool _showRemoveOption = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _initVolume();
-  }
-
-  Future<void> _initVolume() async {
+  Future<void> _triggerVolumeUI() async {
     try {
-      final volume = await VolumeController.instance.getVolume();
-      setState(() {
-        _currentVolume = volume;
-      });
+      await platform.invokeMethod('showVolumeUI');
     } catch (e) {
-      log("Error getting volume: $e");
+      log('Error triggering volume UI: $e');
     }
-
-    // Listen for volume changes
-    VolumeController.instance.addListener((volume) {
-      setState(() {
-        _currentVolume = volume;
-      });
-    });
   }
 
-  @override
-  void dispose() {
-    VolumeController.instance.removeListener();
-    super.dispose();
-  }
-
-  Future<void> _setVolume(double value) async {
-    setState(() {
-      _currentVolume = value;
-    });
-    await VolumeController.instance.setVolume(value);
+  Future<void> _closeBubble() async {
+    await FlutterOverlayWindow.closeOverlay();
   }
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _isExpanded = !_isExpanded;
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          width: 60,
-          height: _isExpanded ? 250 : 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            color: const Color(0x4D000000), // black 30%
-            border: Border.all(
-              color: const Color(0x66673AB7), // deepPurple 40%
-              width: 1.5,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33673AB7), // deepPurple 20%
-                blurRadius: 20,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: Stack(
-              children: [
-                // Frosted glass effect background
-                Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0x26FFFFFF), // white 15%
-                        Color(0x0DFFFFFF), // white 5%
-                      ],
-                    ),
-                  ),
-                ),
-                // Content
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (_isExpanded) ...[
-                      const SizedBox(height: 16),
-                      // Volume slider
-                      Expanded(
-                        child: RotatedBox(
-                          quarterTurns: 3,
-                          child: SliderTheme(
-                            data: SliderThemeData(
-                              trackHeight: 6,
-                              thumbShape: const RoundSliderThumbShape(
-                                enabledThumbRadius: 8,
-                              ),
-                              overlayShape: const RoundSliderOverlayShape(
-                                overlayRadius: 16,
-                              ),
-                              activeTrackColor: Colors.deepPurple,
-                              inactiveTrackColor:
-                                  const Color(0x33FFFFFF), // white 20%
-                              thumbColor: Colors.white,
-                              overlayColor:
-                                  const Color(0x33673AB7), // deepPurple 20%
-                            ),
-                            child: Slider(
-                              value: _currentVolume,
-                              onChanged: _setVolume,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    // Bubble indicator (always visible)
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Color(0x99673AB7), // deepPurple 60%
-                            Color(0x33673AB7), // deepPurple 20%
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (_isExpanded) const SizedBox(height: 16),
+      child: Stack(
+        children: [
+          // Main bubble
+          GestureDetector(
+            onTap: () {
+              if (_showRemoveOption) {
+                setState(() => _showRemoveOption = false);
+              } else {
+                _triggerVolumeUI();
+              }
+            },
+            onLongPress: () {
+              setState(() => _showRemoveOption = true);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xCC673AB7),
+                    Color(0x99512DA8),
                   ],
                 ),
-              ],
+                border: Border.all(
+                  color: const Color(0x66FFFFFF),
+                  width: 1.5,
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x40673AB7),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.volume_up_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
             ),
           ),
-        ),
+
+          // Remove option popup (shows on long press)
+          if (_showRemoveOption)
+            Positioned(
+              left: -60,
+              top: 0,
+              child: GestureDetector(
+                onTap: _closeBubble,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xE6D32F2F),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x40000000),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.close, color: Colors.white, size: 16),
+                      SizedBox(width: 4),
+                      Text(
+                        'Remove',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
