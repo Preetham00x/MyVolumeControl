@@ -1,8 +1,8 @@
-📱 Volume Control App
+## 📱 Volume Control App
 
 A simple and easy-to-use Android application built using Flutter that allows users to control their mobile volume without using physical volume buttons.
 
-🚀 About the App
+## 🚀 About the App
 
 The Volume Control App works as a replacement for the device’s physical volume buttons. It provides quick and convenient access to the system volume controller directly from the notification panel.
 
@@ -14,7 +14,7 @@ Buttons are hard to press
 
 Users prefer on-screen volume control
 
-🎯 Motive
+## 🎯 Motive
 
 The main motive of this application is to:
 
@@ -24,7 +24,7 @@ Provide quick access to volume control
 
 Improve ease of use and accessibility
 
-⚙️ How It Works
+## ⚙️ How It Works
 
 Install the APK on your Android device
 
@@ -36,13 +36,13 @@ The mobile volume controller will appear
 
 Adjust the volume easily
 
-📦 APK File Location
+## 📦 APK File Location
 
 After building the project, the APK can be found at:
 
 VolumeControl\build\app\outputs\flutter-apk\app-arm64-v8a-release.apk
 
-✨ Features
+## ✨ Features
 
 Simple and user-friendly interface
 
