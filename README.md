@@ -4,7 +4,7 @@ A simple and easy-to-use Android application built using Flutter that allows use
 
 ## 🚀 About the App
 
-The Volume Control App works as a replacement for the device’s physical volume buttons. It provides quick and convenient access to the system volume controller directly from the notification panel.
+The Volume Control App works as a replacement for the device’s physical volume buttons. It provides quick and convenient access to the system volume controller directly from the notification panel
 
 This app is especially useful when:
 
